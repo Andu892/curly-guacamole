@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
-  const [student, setStudent] = useState({});
+  const [student, setStudent] = useState({
+    name: "John Doe",
+    rollNumber: "12345",
+    email: "john@example.com",
+    department: "CS",
+    year: "3",
+    attendance: 85,
+    results: "A"
+  });
 
 
    const logoutHandler = () => {
@@ -28,44 +35,11 @@ export default function StudentDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    const studentId = localStorage.getItem("studentId");
 
-    console.log("token:", token);
-    console.log("role:", role);
-    console.log("studentId:", studentId);
-
-if (!token || role !== "student") {
-  navigate("/student/login");
-  return;
-}
-
-
-    // if no studentId, don't crash
-    if (!studentId) {
-      console.log("studentId missing");
+    if (!token || role !== "student") {
+      navigate("/student/login");
       return;
     }
-
-    const fetchStudentDetails = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/students/${studentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setStudent(res.data);
-      } catch (error) {
-       console.log("Fetch student error:", error.response?.data || error.message);
-  // localStorage.clear();
-  // navigate("/student/login");
-        }   
-       };
-
-    fetchStudentDetails();
   }, [navigate]);
 
   return (
@@ -92,18 +66,24 @@ if (!token || role !== "student") {
           <div style={{ background: "white", padding: "20px", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", textAlign: "center" }}>
             <h3>Welcome</h3>
             <p>{student?.name || "Student"}</p>
+            <p>Roll: {student.rollNumber}</p>
+            <p>Dept: {student.department}</p>
           </div>
           <div style={{ background: "white", padding: "20px", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", textAlign: "center" }}>
-            Attendance
+            <h3>Attendance</h3>
+            <p>{student.attendance}%</p>
           </div>
           <div style={{ background: "white", padding: "20px", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", textAlign: "center" }}>
-            Marks
+            <h3>Marks</h3>
+            <p>Grade: {student.results}</p>
           </div>
           <div style={{ background: "white", padding: "20px", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", textAlign: "center" }}>
-            Assignments
+            <h3>Assignments</h3>
+            <p>Pending: 2</p>
           </div>
           <div style={{ background: "white", padding: "20px", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", textAlign: "center" }}>
-            Notices
+            <h3>Notices</h3>
+            <p>New: 1</p>
           </div>
         </div>
       </div>

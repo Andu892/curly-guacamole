@@ -6,7 +6,7 @@ import Login from "./pages/Login"; // Admin Login
 import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
-import StudentLogin from "./pages/StudentLogin";
+import StudentLogin from "./pages/Studentlogin";
 
 function App() {
   return (
