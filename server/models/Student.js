@@ -46,28 +46,8 @@ const studentSchema = new mongoose.Schema(
     },
 
     results: {
-      semester: {
-        type: Number,
-      },
-      subjects: [
-        {
-          subjectName: {
-            type: String,
-          },
-          marks: {
-            type: Number,
-          },
-        },
-      ],
-      totalMarks: {
-        type: Number,
-      },
-      percentage: {
-        type: Number,
-      },
-      grade: {
-        type: String,
-      },
+      type: String,
+      default: "N/A",
     },
 
     createdBy: {

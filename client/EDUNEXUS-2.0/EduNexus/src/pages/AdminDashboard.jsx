@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -14,10 +15,23 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
 
   // Students List State
-  const [students, setStudents] = useState([
-    { id: 1, name: "John Doe", rollNumber: "12345", email: "john@example.com", department: "CS", year: "3", attendance: 85, results: "A" },
-    { id: 2, name: "Jane Smith", rollNumber: "12346", email: "jane@example.com", department: "IT", year: "2", attendance: 90, results: "B+" },
-  ]);
+  const [students, setStudents] = useState([]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("/api/students", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStudents(res.data);
+      } catch (error) {
+        console.error("Failed to fetch students:", error);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   // Edit State
   const [editingStudent, setEditingStudent] = useState(null);
@@ -25,16 +39,16 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
+    const user = JSON.parse(localStorage.getItem("user"));
 
-    if (!token || role !== "admin") {
+    if (!token || !user || user.role !== "admin") {
       navigate("/admin/login");
       return;
     }
 
     const verifyAdmin = async () => {
       try {
-        await axios.get("http://localhost:5000/api/admin/profile", {
+        await axios.get("/api/admin/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
       } catch (error) {
@@ -60,29 +74,33 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Add to local state instead of API
-    const newStudent = {
-      id: students.length + 1,
-      name,
-      rollNumber,
-      email,
-      department,
-      year,
-      attendance: 0,
-      results: "N/A"
-    };
-    setStudents([...students, newStudent]);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post("/api/students/register", {
+        name,
+        email,
+        rollNumber,
+        department,
+        year: parseInt(year),
+        password,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    alert("Student added successfully");
-    setShowStudentForm(false);
+      setStudents([...students, res.data]);
+      alert("Student added successfully");
+      setShowStudentForm(false);
 
-    // Clear form
-    setName("");
-    setRollNumber("");
-    setEmail("");
-    setPassword("");
-    setDepartment("");
-    setYear("");
+      // Clear form
+      setName("");
+      setRollNumber("");
+      setEmail("");
+      setPassword("");
+      setDepartment("");
+      setYear("");
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to add student");
+    }
   };
 
   const handleEdit = (student) => {
@@ -95,47 +113,90 @@ export default function AdminDashboard() {
     setShowEditForm(true);
   };
 
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    const updatedStudents = students.map(s => 
-      s.id === editingStudent.id ? { ...s, name, rollNumber, email, department, year } : s
-    );
-    setStudents(updatedStudents);
-    alert("Student updated successfully");
-    setShowEditForm(false);
-    setEditingStudent(null);
-    // Clear form
-    setName("");
-    setRollNumber("");
-    setEmail("");
-    setDepartment("");
-    setYear("");
-  };
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(`/api/students/${editingStudent._id}`, {
+        name,
+        rollNumber,
+        email,
+        department,
+        year: parseInt(year),
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this student?")) {
-      setStudents(students.filter(s => s.id !== id));
-      alert("Student deleted successfully");
-    }
-  };
-
-  const handleAttendance = (student) => {
-    const newAttendance = prompt("Enter new attendance percentage:", student.attendance);
-    if (newAttendance !== null) {
       const updatedStudents = students.map(s => 
-        s.id === student.id ? { ...s, attendance: parseInt(newAttendance) || 0 } : s
+        s._id === editingStudent._id ? res.data : s
       );
       setStudents(updatedStudents);
+      alert("Student updated successfully");
+      setShowEditForm(false);
+      setEditingStudent(null);
+      // Clear form
+      setName("");
+      setRollNumber("");
+      setEmail("");
+      setDepartment("");
+      setYear("");
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to update student");
     }
   };
 
-  const handleResults = (student) => {
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this student?")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`/api/students/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStudents(students.filter(s => s._id !== id));
+        alert("Student deleted successfully");
+      } catch (error) {
+        alert(error.response?.data?.message || "Failed to delete student");
+      }
+    }
+  };
+
+  const handleAttendance = async (student) => {
+    const status = prompt("Enter attendance status (present/absent):", student.attendance);
+    if (status && (status === "present" || status === "absent")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.put(`/api/students/${student._id}/attendance`, {
+          status,
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const updatedStudents = students.map(s => 
+          s._id === student._id ? { ...s, attendance: status } : s
+        );
+        setStudents(updatedStudents);
+      } catch (error) {
+        alert("Failed to update attendance");
+      }
+    }
+  };
+
+  const handleResults = async (student) => {
     const newResults = prompt("Enter new results grade:", student.results);
     if (newResults !== null) {
-      const updatedStudents = students.map(s => 
-        s.id === student.id ? { ...s, results: newResults } : s
-      );
-      setStudents(updatedStudents);
+      try {
+        const token = localStorage.getItem("token");
+        await axios.put(`/api/students/${student._id}/results`, {
+          grade: newResults,
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const updatedStudents = students.map(s => 
+          s._id === student._id ? { ...s, results: newResults } : s
+        );
+        setStudents(updatedStudents);
+      } catch (error) {
+        alert("Failed to update results");
+      }
     }
   };
 
@@ -230,17 +291,17 @@ export default function AdminDashboard() {
             </thead>
             <tbody>
               {students.map(student => (
-                <tr key={student.id}>
+                <tr key={student._id}>
                   <td style={td}>{student.name}</td>
                   <td style={td}>{student.rollNumber}</td>
                   <td style={td}>{student.email}</td>
                   <td style={td}>{student.department}</td>
                   <td style={td}>{student.year}</td>
-                  <td style={td}>{student.attendance}%</td>
+                  <td style={td}>{student.attendance}</td>
                   <td style={td}>{student.results}</td>
                   <td style={td}>
                     <button style={actionBtn} onClick={() => handleEdit(student)}>Edit</button>
-                    <button style={deleteBtn} onClick={() => handleDelete(student.id)}>Delete</button>
+                    <button style={deleteBtn} onClick={() => handleDelete(student._id)}>Delete</button>
                     <button style={actionBtn} onClick={() => handleAttendance(student)}>Attendance</button>
                     <button style={actionBtn} onClick={() => handleResults(student)}>Results</button>
                   </td>

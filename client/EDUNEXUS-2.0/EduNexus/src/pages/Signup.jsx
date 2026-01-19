@@ -24,13 +24,22 @@ export default function Signup() {
 
 
   try {
-    await axios.post(
+    const res = await axios.post(
       "/api/admin/register",
       { name, email, password }
     );
 
+    // Save token and user
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify({
+      _id: res.data._id,
+      name: res.data.name,
+      email: res.data.email,
+      role: "admin"
+    }));
+
     alert("Admin registered successfully");
-    nav("/admin/login"); // go to login
+    nav("/admin/dashboard"); // go to dashboard directly
   } catch (err) {
     alert(err.response?.data?.message || "Signup failed");
   }

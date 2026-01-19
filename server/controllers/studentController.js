@@ -181,7 +181,7 @@ const studentAttendance = async (req, res) => {
  */
 const uploadExamResult = async (req, res) => {
   try {
-    const { semester, subjects } = req.body;
+    const { grade } = req.body;
 
     const student = await Student.findById(req.params.id);
 
@@ -189,29 +189,10 @@ const uploadExamResult = async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    let totalMarks = 0;
-    subjects.forEach((s) => (totalMarks += s.marks));
-
-    const percentage =
-      (totalMarks / (subjects.length * 100)) * 100;
-
-    let grade = "F";
-    if (percentage >= 90) grade = "A";
-    else if (percentage >= 75) grade = "B";
-    else if (percentage >= 60) grade = "C";
-    else if (percentage >= 40) grade = "D";
-
-    student.results = {
-      semester,
-      subjects,
-      totalMarks,
-      percentage,
-      grade,
-    };
-
+    student.results = grade;
     await student.save();
 
-    res.status(200).json(student.results);
+    res.status(200).json({ message: "Results updated", results: grade });
   } catch (error) {
     console.error("Upload Result Error:", error);
     res.status(500).json({ message: "Server error" });

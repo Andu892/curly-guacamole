@@ -16,9 +16,7 @@ export default function Login() {
 
       // Save user data
       localStorage.setItem("token", res.data.token);
-
-      // ⚠️ Correct role saving
-      localStorage.setItem("role", res.data.admin.role);
+      localStorage.setItem("user", JSON.stringify(res.data.admin));
 
       // go to admin dashboard
       nav("/admin/dashboard");
